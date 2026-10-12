@@ -1,113 +1,76 @@
 import React, { useState, useRef } from 'react';
 
-/**
- * ImageUploader - drag-and-drop and file picker upload component.
- * @param {object} props
- * @param {function} props.onUpload - Callback with File[] when files are selected
- * @param {function} props.onValidationFail - Callback with failed files array
- */
-export default function ImageUploader({ onUpload, onValidationFail }) {
-  const [isDragging, setIsDragging] = useState(false);
+export default function ImageUploader({ onUpload }) {
+  const [isDragging, setIsDragging]   = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
-
   const ACCEPT_TYPES = '.png,.jpg,.jpeg,.webp,.gif';
 
   const handleFiles = async (fileList) => {
     const files = Array.from(fileList).filter(f => f instanceof File);
-    if (files.length === 0) return;
-
+    if (!files.length) return;
     setIsUploading(true);
-    try {
-      await onUpload(files);
-    } finally {
-      setIsUploading(false);
-    }
+    try { await onUpload(files); }
+    finally { setIsUploading(false); }
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    if (e.dataTransfer.files) {
-      handleFiles(e.dataTransfer.files);
-    }
-  };
-
-  const handleFilePicker = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileInput = (e) => {
-    if (e.target.files) {
-      handleFiles(e.target.files);
-      // Reset input so same file can be selected again
-      e.target.value = '';
-    }
-  };
+  const onDragOver  = e => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
+  const onDragLeave = e => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
+  const onDrop      = e => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); e.dataTransfer.files && handleFiles(e.dataTransfer.files); };
+  const onInput     = e => { e.target.files && handleFiles(e.target.files); e.target.value = ''; };
 
   return (
     <div
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      className={`
-        border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition
-        ${isDragging
-          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-          : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-        }
-      `}
-      onClick={handleFilePicker}
+      onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
+      onClick={() => !isUploading && fileInputRef.current?.click()}
+      className={`relative overflow-hidden rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200 ${
+        isDragging
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[1.01]'
+          : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10'
+      }`}
     >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={ACCEPT_TYPES}
-        multiple
-        onChange={handleFileInput}
-        className="hidden"
-      />
+      <input ref={fileInputRef} type="file" accept={ACCEPT_TYPES} multiple onChange={onInput} className="hidden" />
 
-      {isUploading ? (
-        <div className="flex flex-col items-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-          <p className="text-gray-600 dark:text-gray-300">Processing images...</p>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center">
-          <svg
-            className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-            />
-          </svg>
-          <p className="text-gray-700 dark:text-gray-200 font-medium">
-            <span className="text-blue-600 dark:text-blue-400">Click to upload</span> or drag and drop
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            PNG, JPG, WebP, GIF (max 10MB each)
-          </p>
-        </div>
+      <div className="py-10 px-6 flex flex-col items-center justify-center text-center">
+        {isUploading ? (
+          <>
+            <div className="w-12 h-12 rounded-full border-4 border-blue-200 dark:border-blue-800 border-t-blue-600 animate-spin mb-4" />
+            <p className="text-base font-semibold text-gray-700 dark:text-gray-200">Processing images…</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Saving to disk</p>
+          </>
+        ) : (
+          <>
+            {/* Icon */}
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-200 ${
+              isDragging
+                ? 'bg-blue-500 scale-110 shadow-lg shadow-blue-200'
+                : 'bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40'
+            }`}>
+              <svg className={`w-8 h-8 ${isDragging ? 'text-white' : 'text-blue-500 dark:text-blue-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+            </div>
+
+            <p className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">
+              {isDragging ? 'Drop to upload' : <><span className="text-blue-600 dark:text-blue-400">Click to upload</span> or drag & drop</>}
+            </p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">PNG, JPG, WebP, GIF · max 10 MB each</p>
+
+            {/* Format badges */}
+            <div className="flex gap-2 mt-4">
+              {['PNG','JPG','WebP','GIF'].map(f => (
+                <span key={f} className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                  {f}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Animated border on drag */}
+      {isDragging && (
+        <div className="absolute inset-0 pointer-events-none border-2 border-blue-500 rounded-2xl animate-pulse" />
       )}
     </div>
   );
