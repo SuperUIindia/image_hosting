@@ -105,3 +105,4 @@ app.listen(PORT, () => {
   console.log(`\n  🖼️  Upload server → http://localhost:${PORT}`);
   console.log(`  Files saved to: public/uploads/[folder]/\n`);
 });
+
